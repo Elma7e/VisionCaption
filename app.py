@@ -1,6 +1,6 @@
 import streamlit as st
 from PIL import Image, ImageDraw
-from transformers import DetrImageProcessor, DetrForObjectDetection
+from transformers import DetrProcessor, DetrForObjectDetection
 from transformers import VisionEncoderDecoderModel, ViTImageProcessor, AutoTokenizer
 import torch
 
@@ -28,7 +28,8 @@ st.write(
 # Load models with caching
 @st.cache_resource
 def load_object_detection_model():
-    processor = DetrImageProcessor.from_pretrained("facebook/detr-resnet-50")
+    # DetrProcessor handles both feature extraction and post-processing
+    processor = DetrProcessor.from_pretrained("facebook/detr-resnet-50")
     model = DetrForObjectDetection.from_pretrained("facebook/detr-resnet-50")
     return processor, model
 
