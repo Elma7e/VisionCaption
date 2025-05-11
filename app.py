@@ -1,6 +1,6 @@
 import streamlit as st
 from PIL import Image, ImageDraw
-from transformers import DetrProcessor, DetrForObjectDetection
+from transformers import DetrFeatureExtractor, DetrForObjectDetection
 from transformers import VisionEncoderDecoderModel, ViTImageProcessor, AutoTokenizer
 import torch
 
@@ -28,10 +28,10 @@ st.write(
 # Load models with caching
 @st.cache_resource
 def load_object_detection_model():
-    # DetrProcessor handles both feature extraction and post-processing
-    processor = DetrProcessor.from_pretrained("facebook/detr-resnet-50")
+    # Use DetrFeatureExtractor for feature extraction and post-processing
+    feature_extractor = DetrFeatureExtractor.from_pretrained("facebook/detr-resnet-50")
     model = DetrForObjectDetection.from_pretrained("facebook/detr-resnet-50")
-    return processor, model
+    return feature_extractor, model
 
 @st.cache_resource
 def load_caption_model():
@@ -47,11 +47,11 @@ def load_caption_model():
     return model, extractor, tokenizer
 
 # Object detection function
-def detect_objects(image, processor, model, threshold=0.9):
-    inputs = processor(images=image, return_tensors="pt")
+def detect_objects(image, feature_extractor, model, threshold=0.9):
+    inputs = feature_extractor(images=image, return_tensors="pt")
     outputs = model(**inputs)
     target_sizes = torch.tensor([image.size[::-1]])
-    results = processor.post_process_object_detection(
+    results = feature_extractor.post_process_object_detection(
         outputs, target_sizes=target_sizes, threshold=threshold
     )[0]
 
@@ -88,13 +88,13 @@ if image:
 
     # Load models
     with st.spinner("Loading models..."):
-        det_processor, det_model = load_object_detection_model()
+        feat_ext, det_model = load_object_detection_model()
         cap_model, cap_extractor, cap_tokenizer = load_caption_model()
 
     # Run detection and caption
     with st.spinner("Analyzing image..."):
         detections = detect_objects(
-            image, det_processor, det_model, threshold=confidence_threshold
+            image, feat_ext, det_model, threshold=confidence_threshold
         )
         caption = generate_caption(
             image, cap_model, cap_extractor, cap_tokenizer
